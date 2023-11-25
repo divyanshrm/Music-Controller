@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Alert from '@material-ui/lab/Alert';
 import { useParams } from 'react-router-dom';
-import { Grid, FormControl, FormLabel, Radio, RadioGroup, FormHelperText, FormControlLabel, TextField, Button,Typography,ButtonGroup} from '@material-ui/core';
+import { Grid, FormControl, FormLabel, Radio, RadioGroup, FormHelperText, FormControlLabel, TextField, Button,Typography,ButtonGroup,makeStyles,Box} from '@material-ui/core';
 import { Link ,useNavigate} from 'react-router-dom';
 import CreateRoomPage from './CreateRoomPage';
 import {Collapse} from '@material-ui/core';
+import {MusicPlayer} from './MusicPlayer';
 const Room = (props) => {
     const navigate = useNavigate();
     const [msg,setmsg]=useState("")
@@ -119,18 +120,29 @@ const Room = (props) => {
         }
       })
     }
-    const getCurrentSong=()=>{
-      fetch('/spotify/current-song').then((response)=>{
-        if (!response.ok){
-          return {}
-        }else{
-          return response.json()
-        }
-      }).then((data)=>setRoomState((prevRoomState) => ({
-        ...prevRoomState,
-        song:data
-      })));
-    }
+
+    const getCurrentSong = () => {
+      fetch('/spotify/current-song')
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Check if data is not empty before updating state
+          if (Object.keys(data).length > 0) {
+            setRoomState((prevRoomState) => ({
+              ...prevRoomState,
+              song: data,
+            }));
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching current song:', error);
+        });
+    };
+    
     useEffect(() => {
       const intervalId = setInterval(() => {
         getCurrentSong();
@@ -179,6 +191,8 @@ const Room = (props) => {
 
 
     const handle_leave = () => {
+      const confirmLeave = window.confirm('Are you sure you want to leave?');
+      if (confirmLeave){
       const csrfToken = document.cookie
         .split('; ')
         .find((row) => row.startsWith('csrftoken='))
@@ -198,20 +212,23 @@ const Room = (props) => {
           props.leaveRoomCallback();
           navigate('/');
         });
-    };
+    }};
   
     return (
       <>
         <Grid container spacing={1}>
         {!roomState.showSettings ? (<><Grid item xs={12} align="center">
             <Typography variant='h4' component='h4'>
-              Room Code: {roomCode}
-            </Typography>
+          Room Code: {roomCode}
+        </Typography>
           </Grid>
 
           <Grid item xs={12} align="center">
 
           </Grid></>):null}
+          {Object.keys(roomState.song).length > 0 && (
+            <MusicPlayer {...roomState.song} />
+          )}
 
           {(roomState.isHost)&&(!roomState.showSettings) ? render_settings() : null}
           {renderCreateRoomPage()} {/* Render the CreateRoomPage conditionally */}
@@ -220,15 +237,10 @@ const Room = (props) => {
             
             <ButtonGroup disableElevation variant='contained' color='primary'>
               <Button color='primary' onClick={handle_leave}> Leave </Button>
-              <Button color='primary' onClick={()=>console.log(roomState)}> Leave </Button>
+
             </ButtonGroup>
           </Grid>
-          <Grid item xs={12} align="center">
-            
-          <Typography variant='h6' component='h6'>
-              {roomState.song.title}
-            </Typography>
-          </Grid>
+
         </Grid>
       </>
     );
