@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { render } from "react-dom";
-import HomePage from '../components/HomePage';
-
+import HomePage from './HomePage';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 
 export default class App extends Component {
@@ -9,11 +9,12 @@ export default class App extends Component {
         super(props);
     }
     render() {
-        return (
-
-                <HomePage />
-
-
+        return (<>
+            <Router>
+            <div className='center'><HomePage /></div>
+                
+            </Router>
+            </>
         );
     }
 }
